@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Panel de seguridad · Laboratorio MTTD / MTTR{% endblock %}
+{% block content %}
+<h1>Panel de seguridad</h1>
+<p class="muted">Eventos y tiempos almacenados en UTC. Los MTTD y MTTR se expresan en segundos.</p>
+
+<section class="grid" aria-label="Métricas">
+  <article class="card">
+    <div class="muted">Incidentes registrados</div>
+    <div class="metric">{{ metrics["incident_count"] }}</div>
+  </article>
+  <article class="card">
+    <div class="muted">MTTD promedio</div>
+    <div class="metric">{{ "%.1f"|format(metrics["average_mttd"]) if metrics["average_mttd"] is not none else "—" }}</div>
+    <div class="muted">Tiempo entre el inicio y la detección.</div>
+  </article>
+  <article class="card">
+    <div class="muted">MTTR promedio</div>
+    <div class="metric">{{ "%.1f"|format(metrics["average_mttr"]) if metrics["average_mttr"] is not none else "—" }}</div>
+    <div class="muted">Tiempo entre la detección y la respuesta.</div>
+  </article>
+</section>
+
+<section class="card">
+  <h2>Registrar incidente</h2>
+  <form method="post" action="{{ url_for('report_incident') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="grid">
+      <div>
+        <label for="occurred_at">Fecha y hora de inicio (UTC)</label>
+        <input id="occurred_at" name="occurred_at" type="datetime-local" value="{{ now }}" required>
+      </div>
+      <div>
+        <label for="severity">Severidad</label>
+        <select id="severity" name="severity" required>
+          <option value="Baja">Baja</option>
+          <option value="Media" selected>Media</option>
+          <option value="Alta">Alta</option>
+          <option value="Crítica">Crítica</option>
+        </select>
+      </div>
+    </div>
+    <label for="description">Descripción</label>
+    <textarea id="description" name="description" minlength="5" maxlength="500" required></textarea>
+    <p><button type="submit">Guardar incidente</button></p>
+  </form>
+</section>
+
+<section class="card">
+  <h2>Incidentes y alertas</h2>
+  {% if incidents %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha de detección</th><th>Usuario</th><th>Descripción / respuesta</th>
+            <th>Severidad</th><th>Estado</th><th>Intentos</th><th>MTTD</th><th>MTTR</th><th>Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for incident in incidents %}
+            <tr>
+              <td>{{ incident["detected_at"] }}</td>
+              <td>{{ incident["username"] }}</td>
+              <td>{{ incident["description"] }}{% if incident["response_action"] %}<br><span class="muted">Respuesta: {{ incident["response_action"] }}</span>{% endif %}</td>
+              <td>{{ incident["severity"] }}</td>
+              <td>{{ incident["status"] }}</td>
+              <td>{{ incident["attempts"] if incident["attempts"] else "—" }}</td>
+              <td>{{ "%.1f s"|format(incident["mttd_seconds"]) if incident["mttd_seconds"] is not none else "—" }}</td>
+              <td>{{ "%.1f s"|format(incident["mttr_seconds"]) if incident["mttr_seconds"] is not none else "—" }}</td>
+              <td>
+                {% if incident["status"] == "Abierto" %}
+                  <form method="post" action="{{ url_for('respond_to_incident', incident_id=incident['id']) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <label class="muted" for="response-{{ incident['id'] }}">Acción</label>
+                    <input id="response-{{ incident['id'] }}" name="response_action" minlength="5" maxlength="250" required>
+                    <button type="submit">Registrar respuesta</button>
+                  </form>
+                {% else %}—{% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="muted">Todavía no hay incidentes.</p>
+  {% endif %}
+</section>
+
+<section class="card">
+  <h2>Bitácora de seguridad</h2>
+  {% if events %}
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Fecha (UTC)</th><th>Usuario</th><th>Evento</th><th>Detalle</th></tr></thead>
+        <tbody>
+          {% for event in events %}
+            <tr>
+              <td>{{ event["occurred_at"] }}</td><td>{{ event["username"] }}</td>
+              <td>{{ event["event_type"] }}</td><td>{{ event["detail"] }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="muted">Aún no se han generado eventos.</p>
+  {% endif %}
+</section>
+{% endblock %}

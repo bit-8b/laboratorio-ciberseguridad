@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Laboratorio MTTD y MTTR{% endblock %}</title>
+  <style>
+    :root { color-scheme: light; font-family: system-ui, sans-serif; color: #172033; background: #f3f6fb; }
+    body { margin: 0; }
+    header { background: #14213d; color: white; padding: 1rem max(1rem, calc((100% - 1100px) / 2)); display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+    header a { color: white; text-decoration: none; }
+    nav { display: flex; align-items: center; gap: 1rem; }
+    main { max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
+    .card { background: white; border: 1px solid #dce3ee; border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem; box-shadow: 0 4px 18px #1720330b; }
+    .auth-card { max-width: 480px; margin: 3rem auto; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; }
+    label { display: block; font-weight: 600; margin: .8rem 0 .3rem; }
+    input, select, textarea { box-sizing: border-box; width: 100%; padding: .7rem; border: 1px solid #aeb9ca; border-radius: 7px; font: inherit; }
+    textarea { min-height: 100px; resize: vertical; }
+    button, .button { border: 0; border-radius: 7px; background: #2456a6; color: white; padding: .7rem 1rem; font: inherit; cursor: pointer; text-decoration: none; }
+    button:hover, .button:hover { background: #193f7c; }
+    .inline-form { display: inline; }
+    .logout { background: transparent; padding: .3rem; }
+    .flash { padding: .8rem 1rem; border-radius: 7px; margin: .5rem 0; background: #e9eef8; }
+    .flash.error { color: #842029; background: #f8d7da; }
+    .flash.success { color: #0f5132; background: #d1e7dd; }
+    .metric { font-size: 1.7rem; font-weight: 700; margin: .25rem 0; }
+    .muted { color: #5c6678; font-size: .92rem; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 680px; }
+    th, td { padding: .7rem; border-bottom: 1px solid #e1e6ef; text-align: left; vertical-align: top; }
+    th { background: #f7f9fc; }
+    h1, h2 { margin-top: 0; }
+    @media (max-width: 600px) { header { align-items: flex-start; flex-direction: column; } main { margin-top: 1rem; } }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="{{ url_for('dashboard') if session.get('user_id') else url_for('login') }}"><strong>Laboratorio de Seguridad · MTTD / MTTR</strong></a>
+    {% if session.get('user_id') %}
+      <nav aria-label="Sesión">
+        <span>{{ session.get('username') }}</span>
+        <form class="inline-form" action="{{ url_for('logout') }}" method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="logout" type="submit">Cerrar sesión</button>
+        </form>
+      </nav>
+    {% endif %}
+  </header>
+  <main>
+    {% for category, message in get_flashed_messages(with_categories=true) %}
+      <div class="flash {{ category }}" role="status">{{ message }}</div>
+    {% endfor %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>
